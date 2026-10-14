@@ -77,6 +77,13 @@ assert w.ov.scale() == 1.0 and w.ov.pixmap().width() < 4000, "확대 시 원본 
 w.fit()
 w.update_overlay()
 assert w.ov.scale() > 1.0,"축소 보기에서는 축소본 사용"
+from PySide6.QtCore import QPoint, QPointF, Qt
+from PySide6.QtGui import QWheelEvent
+for wd, get in ((w.sl[0], w.sl[0].value), (w.fmt, w.fmt.currentIndex), (w.cat, w.cat.currentIndex)):
+    v = get()
+    ev = QWheelEvent(QPointF(5, 5), QPointF(5, 5), QPoint(0, 0), QPoint(0, -120), Qt.NoButton, Qt.NoModifier, Qt.NoScrollPhase, False)
+    qa.sendEvent(wd, ev)
+    assert get() == v and not ev.isAccepted(), f"{type(wd).__name__} 휠 동작함"
 print("정확성 OK")
 
 # --- 안정성 ---

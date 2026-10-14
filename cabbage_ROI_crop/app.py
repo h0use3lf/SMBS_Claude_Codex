@@ -96,6 +96,16 @@ def write_img(dst, a):
         tifffile.imwrite(dst, a, photometric="rgb", extrasamples=(2,) if a.shape[2] == 4 else None, compression="zlib")
 
 
+class NoWheelSlider(QSlider):
+    def wheelEvent(self, e):
+        e.ignore()  # 부모(스크롤 영역)로 전달
+
+
+class NoWheelCombo(QComboBox):
+    def wheelEvent(self, e):
+        e.ignore()
+
+
 class View(QGraphicsView):
     """휠=확대/축소(커서 기준), 우클릭/휠클릭 드래그=이동, 좌클릭=꼭짓점, 더블클릭=ROI 닫기."""
 
@@ -186,7 +196,7 @@ class Win(QMainWindow):
         o.addWidget(btn("저장 폴더 선택", self.pick_out))
         self.out_lab = QLabel("(미지정)")
         self.out_lab.setWordWrap(True)
-        self.fmt = QComboBox()
+        self.fmt = NoWheelCombo()
         self.fmt.addItems(["PNG", "TIFF"])
         self.alpha_cb = QCheckBox("제거 영역 투명 (해제=검정)")
         self.alpha_cb.setChecked(True)
@@ -195,7 +205,7 @@ class Win(QMainWindow):
 
         cat = QGroupBox("카테고리 ( [ ] 키로 전환)")
         c = QVBoxLayout(cat)
-        self.cat = QComboBox()
+        self.cat = NoWheelCombo()
         self.cat.addItem("(없음)")
         cb = QHBoxLayout()
         cb.addWidget(btn("추가", self.add_cat))
@@ -216,7 +226,7 @@ class Win(QMainWindow):
         fl = QVBoxLayout(flt)
         self.sl, self.labs = [], []
         for i in range(len(SLIDERS)):
-            lab, s = QLabel(), QSlider(Qt.Horizontal)
+            lab, s = QLabel(), NoWheelSlider(Qt.Horizontal)
             s.setRange(0, LIMITS[i])
             s.valueChanged.connect(lambda v, i=i: self.on_slider(i, v))
             self.labs.append(lab)
