@@ -1,0 +1,14 @@
+Dataset: ny / nv
+LED sample: C:\Users\박원교\OneDrive\바탕 화면\led_10_03\led\ny\nv
+LED white: C:\Users\박원교\OneDrive\바탕 화면\led_10_03\led\white
+LED dark: C:\Users\박원교\OneDrive\바탕 화면\led_10_03\led\dark
+
+ny_NV_VNIR
+Sample: C:\Users\박원교\OneDrive\바탕 화면\led_10_03\.cube\ny_NV_VNIR
+White: C:\Users\박원교\OneDrive\바탕 화면\led_10_03\.cube\white_VisNIR
+Dark: C:\Users\박원교\OneDrive\바탕 화면\led_10_03\.cube\dark_VNIR
+
+ny_NV_swir
+Sample: C:\Users\박원교\OneDrive\바탕 화면\led_10_03\.cube\ny_NV_swir
+White: C:\Users\박원교\OneDrive\바탕 화면\led_10_03\.cube\white_swir
+Dark: C:\Users\박원교\OneDrive\바탕 화면\led_10_03\.cube\dark_swir

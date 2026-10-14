@@ -1,0 +1,6 @@
+[2026-10-12 20:05:33] running | Created a new result folder.
+[2026-10-12 20:05:33] running | [1/4] LED white/dark correction
+[2026-10-12 20:12:36] running | [2/4] VNIR and SWIR white/dark correction
+[2026-10-12 20:13:09] running | [3/4] Orientation, tape ROIs, registration and cube building
+[2026-10-12 20:23:47] running | [4/4] Exclude tape and low LED22 background as NaN
+[2026-10-12 20:24:00] complete | All four steps completed for VNIR and SWIR.

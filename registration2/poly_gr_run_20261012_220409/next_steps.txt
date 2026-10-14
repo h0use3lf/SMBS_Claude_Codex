@@ -1,0 +1,23 @@
+CT-OR run: C:\Users\박원교\OneDrive\바탕 화면\led_10_03\정합2\poly_gr_run_20261012_220409
+Raw source: C:\Users\박원교\OneDrive\바탕 화면\led_10_03
+
+MATLAB setup (also works after restarting MATLAB):
+addpath('C:\Users\박원교\OneDrive\바탕 화면\정합_ver2\CT_OR_MATLAB_portable');
+sourceRoot = 'C:\Users\박원교\OneDrive\바탕 화면\led_10_03';
+runDir = 'C:\Users\박원교\OneDrive\바탕 화면\led_10_03\정합2\poly_gr_run_20261012_220409';
+
+AFTER all four steps have completed:
+analyze_ct_or_grid('both',runDir);
+analyze_ct_or_roi('VNIR',runDir);
+analyze_ct_or_roi('SWIR',runDir);
+
+If registration was CANCELLED after both calibration steps completed:
+ok = register_ct_or_preprocessed(sourceRoot,false,runDir);
+if ok, mask_ct_or_preprocessed(runDir); end
+This repeats orientation/ROI selection without repeating calibration.
+Manual recovery does not update run_info.mat from the original run.
+
+Selected dataset: poly / gr
+Final masked cubes (for each poly_GR_VNIR / poly_GR_swir):
+ct_or_preprocessed_registration/<sensor>/calibrated_cubes/nan_background/
+LED_cube_32_corrected.mat, linescan_cube_corrected.mat, fabric_mask.mat
