@@ -3,3 +3,4 @@ dist/
 *.spec
 __pycache__/
 tests/stress_log.txt
+release/
