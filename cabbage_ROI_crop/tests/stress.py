@@ -70,6 +70,16 @@ w.fill_list(select=0)
 w.rois()[0][2] = "줄1"
 w.save([0])
 assert (out / "a16_줄1_7.tif").exists(), "카테고리 파일명"
+w.save([0])  # 같은 ROI 재저장 → CSV 행이 중복되면 안 됨
+import csv
+with open(out / "a16_rois.csv", encoding="utf-8-sig") as fh:
+    rows = list(csv.DictReader(fh))
+files = [r["file"] for r in rows]
+assert len(files) == len(set(files)) and "a16_줄1_7.tif" in files and "a16_8.tif" in files, f"CSV 행 오류: {files}"
+r = next(r for r in rows if r["file"] == "a16_줄1_7.tif")
+assert (r["category"], r["label"], r["gray_max"], r["bbox_x"], r["bbox_w"]) == ("줄1", "7", "60", "100", "800"), r
+assert int(r["kept_px"]) == (t[..., 3] > 0).sum(), "CSV kept_px 불일치"
+assert not any(out.glob("b8_rois.csv")), "다른 이미지 CSV가 생기면 안 됨"
 w.actual()
 qa.processEvents()
 w.update_overlay()

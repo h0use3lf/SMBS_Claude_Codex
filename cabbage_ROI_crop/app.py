@@ -1,7 +1,9 @@
 """ROI 폴리곤 크롭 도구: 폴리곤 ROI + ROI별 Gray/HSV 필터 + 수동 라벨/카테고리 저장."""
+import csv
 import gc
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import cv2
@@ -71,7 +73,7 @@ def keep_mask(rgb8, f):
 
 
 def extract(im, pts, f, transparent):
-    """폴리곤 bbox를 원본 해상도로 잘라 필터 적용. 반환: (RGB/RGBA 배열, 유지된 픽셀 수)."""
+    """폴리곤 bbox를 원본 해상도로 잘라 필터 적용. 반환: (RGB/RGBA 배열, 유지된 픽셀 수, bbox 좌상단)."""
     x0, y0 = np.floor(pts.min(0)).astype(int).clip(0)
     x1, y1 = np.minimum(np.ceil(pts.max(0)).astype(int), (im.w, im.h))
     sub = im.rgb[y0:y1, x0:x1]
@@ -80,10 +82,28 @@ def extract(im, pts, f, transparent):
     m &= keep_mask(im.to8(sub), f)
     keep, n = m > 0, cv2.countNonZero(m)
     if not transparent:
-        return sub * keep[..., None], n
+        return sub * keep[..., None], n, (x0, y0)
     top = np.iinfo(sub.dtype).max if sub.dtype.kind in "ui" else 1.0
     a = im.alpha[y0:y1, x0:x1] if im.alpha is not None else np.full(m.shape, top, sub.dtype)
-    return np.dstack([sub, a * keep]), n
+    return np.dstack([sub, a * keep]), n, (x0, y0)
+
+
+CSV_COLS = ["saved_at", "source", "file", "category", "label", "kept_px", "roi_area_px",
+            "bbox_x", "bbox_y", "bbox_w", "bbox_h", "gray_min", "gray_max", "h_min", "h_max",
+            "s_min", "s_max", "v_min", "v_max", "points"]
+
+
+def update_csv(path, rows):
+    """이미지별 CSV에 행을 반영. 같은 출력 파일명 행은 새 값으로 교체(재저장 시 중복 방지)."""
+    old = []
+    if path.exists():
+        with open(path, newline="", encoding="utf-8-sig") as fh:
+            old = list(csv.DictReader(fh))
+    new = {r["file"] for r in rows}
+    with open(path, "w", newline="", encoding="utf-8-sig") as fh:  # utf-8-sig: 엑셀에서 한글 깨짐 방지
+        w = csv.DictWriter(fh, CSV_COLS, extrasaction="ignore")
+        w.writeheader()
+        w.writerows([r for r in old if r.get("file") not in new] + rows)
 
 
 def write_img(dst, a):
@@ -573,23 +593,33 @@ class Win(QMainWindow):
             if not self.out:
                 return
         ext = ".png" if self.fmt.currentIndex() == 0 and self.img.rgb.dtype in (np.uint8, np.uint16) else ".tif"
-        saved = 0
-        for i in idx:
-            pts, n, c, f = self.rois()[i]
-            dst = Path(self.out) / f"{'_'.join(filter(None, (Path(self.path).stem, c, n)))}{ext}"
-            if dst.exists() and QMessageBox.question(self, "덮어쓰기", f"{dst.name} 이(가) 이미 있습니다. 덮어쓸까요?") != QMessageBox.Yes:
-                continue
-            try:
-                a, kept = extract(self.img, pts, f, self.alpha_cb.isChecked())
-                if kept == 0:
-                    QMessageBox.warning(self, "빈 결과", f"ROI {self.tag(n, c)}:필터 후 남은 픽셀이 없어 저장하지 않았습니다.")
+        stem, rows = Path(self.path).stem, []
+        try:
+            for i in idx:
+                pts, n, c, f = self.rois()[i]
+                dst = Path(self.out) / f"{'_'.join(filter(None, (stem, c, n)))}{ext}"
+                if dst.exists() and QMessageBox.question(self, "덮어쓰기", f"{dst.name} 이(가) 이미 있습니다. 덮어쓸까요?") != QMessageBox.Yes:
                     continue
-                write_img(dst, a)
-                saved += 1
-            except Exception as e:
-                QMessageBox.critical(self, "저장 실패", f"{dst}\n\n{e}")
-                return
-        self.statusBar().showMessage(f"{saved}개 저장 완료 → {self.out}", 5000)
+                try:
+                    a, kept, (bx, by) = extract(self.img, pts, f, self.alpha_cb.isChecked())
+                    if kept == 0:
+                        QMessageBox.warning(self, "빈 결과", f"ROI {self.tag(n, c)}: 필터 후 남은 픽셀이 없어 저장하지 않았습니다.")
+                        continue
+                    write_img(dst, a)
+                except Exception as e:
+                    QMessageBox.critical(self, "저장 실패", f"{dst}\n\n{e}")
+                    return
+                rows.append(dict(zip(CSV_COLS, [
+                    datetime.now().isoformat(timespec="seconds"), self.path, dst.name, c, n, kept,
+                    round(float(cv2.contourArea(pts)), 1), bx, by, a.shape[1], a.shape[0], *f,
+                    ";".join(f"{x:.1f} {y:.1f}" for x, y in pts)])))
+        finally:  # 중간에 실패해도 이미 저장된 ROI는 기록
+            if rows:
+                try:
+                    update_csv(Path(self.out) / f"{stem}_rois.csv", rows)
+                except OSError as e:
+                    QMessageBox.critical(self, "CSV 저장 실패", f"이미지는 저장됐지만 CSV를 쓰지 못했습니다 (엑셀에서 열려 있나요?)\n\n{e}")
+        self.statusBar().showMessage(f"{len(rows)}개 저장 완료 → {self.out}", 5000)
 
 
 if __name__ == "__main__":
