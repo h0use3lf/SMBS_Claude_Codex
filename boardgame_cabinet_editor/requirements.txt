@@ -1,4 +1,0 @@
-openpyxl
-
-# exe 빌드용 (실행에는 필요 없음)
-pyinstaller
